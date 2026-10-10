@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Movie Night Finder</title>
+  <meta name="description" content="Ein paar Fragen – und ihr bekommt 2-3 passende Filme oder Serien auf Netflix, Prime Video und Disney+.">
+  <meta name="theme-color" content="#141021">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app">
+    <header class="top">
+      <button class="brand" id="homeBtn" type="button" aria-label="Zum Start">🍿 <span>Movie Night</span></button>
+      <div class="progress" id="progress" aria-hidden="true"></div>
+    </header>
+
+    <!-- Start -->
+    <section class="screen active" id="screen-start">
+      <div class="hero">
+        <div class="hero-emoji">🎬</div>
+        <h1>Was gucken wir heute?</h1>
+        <p class="lead">4 kurze Fragen, dann bekommt ihr 3 Vorschläge – nur aus euren Abos. Schluss mit Endlos-Scrollen.</p>
+        <button class="btn primary big" id="startBtn" type="button">Los geht's</button>
+        <button class="btn ghost" id="quickBtn" type="button" hidden>⚡ Wie letztes Mal, nur neue Vorschläge</button>
+      </div>
+    </section>
+
+    <!-- Frage 1: Dienste -->
+    <section class="screen" id="screen-services" data-step="1">
+      <h2>Welche Abos habt ihr?</h2>
+      <p class="hint">Wird gespeichert – nächsten Samstag müsst ihr das nicht nochmal angeben.</p>
+      <div class="options" id="opt-services"></div>
+      <div class="nav"><button class="btn primary" data-next type="button">Weiter</button></div>
+    </section>
+
+    <!-- Frage 2: Stimmung -->
+    <section class="screen" id="screen-mood" data-step="2">
+      <h2>Worauf habt ihr Lust?</h2>
+      <p class="hint">Bis zu 2 auswählen.</p>
+      <div class="options grid" id="opt-mood"></div>
+      <div class="nav"><button class="btn ghost" data-back type="button">Zurück</button><button class="btn primary" data-next type="button">Weiter</button></div>
+    </section>
+
+    <!-- Frage 3: Format -->
+    <section class="screen" id="screen-format" data-step="3">
+      <h2>Film oder Serie?</h2>
+      <p class="hint">Wie viel Zeit habt ihr heute Abend?</p>
+      <div class="options" id="opt-format"></div>
+      <div class="nav"><button class="btn ghost" data-back type="button">Zurück</button><button class="btn primary" data-next type="button">Weiter</button></div>
+    </section>
+
+    <!-- Frage 4: Favoriten -->
+    <section class="screen" id="screen-favs" data-step="4">
+      <h2>Was fandet ihr richtig gut?</h2>
+      <p class="hint">Optional. Ein paar Filme oder Serien, die euch gefallen haben – wir suchen Ähnliches. Wird ebenfalls gespeichert.</p>
+      <div class="search">
+        <input id="favInput" type="search" placeholder="z. B. Knives Out, Friends, Harry Potter …" autocomplete="off" aria-label="Titel suchen">
+        <ul class="suggest" id="favSuggest" role="listbox"></ul>
+      </div>
+      <div class="chips" id="favChips"></div>
+      <p class="hint small" id="favEmpty">Noch nichts ausgewählt – passt auch.</p>
+      <div class="nav"><button class="btn ghost" data-back type="button">Zurück</button><button class="btn primary" id="findBtn" type="button">🎯 Filme finden</button></div>
+    </section>
+
+    <!-- Ergebnis -->
+    <section class="screen" id="screen-results">
+      <h2 id="resultTitle">Eure Vorschläge</h2>
+      <p class="hint" id="resultHint"></p>
+      <div class="results" id="results"></div>
+      <div class="nav col">
+        <button class="btn primary" id="rerollBtn" type="button">🔄 Andere Vorschläge</button>
+        <button class="btn ghost" id="restartBtn" type="button">Fragen neu beantworten</button>
+      </div>
+      <p class="footnote">Verfügbarkeit gilt für Deutschland und kann sich ändern – „Wo läuft's?“ prüft den aktuellen Stand auf JustWatch.
+        <button class="linkbtn" id="resetSeenBtn" type="button" hidden>„Schon gesehen“-Liste leeren</button></p>
+    </section>
+  </main>
+
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

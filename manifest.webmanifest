@@ -1,0 +1,11 @@
+{
+  "name": "Movie Night Finder",
+  "short_name": "Movie Night",
+  "description": "Ein paar Fragen – und ihr bekommt 2-3 passende Filme oder Serien.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#141021",
+  "theme_color": "#141021",
+  "lang": "de",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
