@@ -165,3 +165,22 @@ input.text:focus { border-color: var(--accent); }
 .btn.wide { width: 100%; margin-bottom: 16px; }
 .okmsg { background: #183a2a; border: 1px solid #2f7a52; color: #b7f5d0; border-radius: 12px; padding: 10px 14px; font-size: .9rem; margin: 0 0 16px; }
 .card.picked { border-color: var(--accent2); box-shadow: 0 0 0 3px var(--accent2), 0 12px 40px rgba(255, 179, 71, .25); }
+
+.segmented.two { grid-template-columns: 1fr 1fr; margin-bottom: 14px; }
+.chip.bad { border-color: #6b7280; background: #2a2533; color: var(--muted); }
+.actions .ask { width: 100%; color: var(--muted); font-size: .9rem; margin-bottom: 2px; }
+
+.switch { display: flex; align-items: center; gap: 12px; font-weight: 600; cursor: pointer; margin: 4px 0 8px; }
+.switch input { position: absolute; opacity: 0; pointer-events: none; }
+.switch .slider { width: 48px; height: 28px; border-radius: 14px; background: var(--line); position: relative; transition: background .2s; flex: none; }
+.switch .slider::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; transition: transform .2s; }
+.switch input:checked + .slider { background: var(--accent); }
+.switch input:checked + .slider::after { transform: translateX(20px); }
+.switch input:focus-visible + .slider { outline: 2px solid var(--accent2); outline-offset: 2px; }
+
+.tbar { display: grid; grid-template-columns: 130px 1fr; align-items: center; gap: 10px; margin: 6px 0; font-size: .92rem; }
+.ttrack { height: 10px; background: var(--card); border-radius: 5px; overflow: hidden; }
+.tfill { display: block; height: 100%; border-radius: 5px; }
+.tfill.pos { background: linear-gradient(90deg, #38ef7d, #11998e); }
+.tfill.neg { background: linear-gradient(90deg, #ff512f, #9b1d1d); }
+#tasteLink { display: block; margin: 0 auto 4px; }

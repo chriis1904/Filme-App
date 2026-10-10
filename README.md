@@ -7,15 +7,24 @@ Schluss mit Endlos-Scrollen: 4 kurze Fragen, dann schlägt die App **3 Filme ode
 1. **Welche Abos habt ihr?** – wird gespeichert
 2. **Worauf habt ihr Lust?** – bis zu 2 Stimmungen (Lachen, Romantik, Spannung, Grusel …)
 3. **Film oder Serie?** – „Beides“ (mind. ein Film *und* eine Serie), „Film, nicht zu lang“, „Film“ oder „Nur Serien“ – plus **Bekannte Hits / Gemischt / Geheimtipps** (bei „Gemischt“ ist immer ein 💎 Geheimtipp dabei)
-4. **Was fandet ihr richtig gut?** – optional, z. B. „Lioness“ oder „Trap: No Way Out“; wird gespeichert und für die Ähnlichkeitssuche genutzt – auch über Film/Serie hinweg
+4. **Was fandet ihr gut – oder blöd?** – optional, mit 👍/👎-Umschalter, z. B. „Lioness“ oder „Trap: No Way Out“; wird gespeichert und für die Ähnlichkeitssuche genutzt – auch über Film/Serie hinweg
 
 Danach:
 - **Wo läuft's?** öffnet JustWatch mit dem aktuellen Streaming-Stand
 - **▶ Trailer** sucht den deutschen Trailer auf YouTube
 - **🤍 Merken** legt den Vorschlag auf eure **Merkliste** (❤️ oben rechts). Dort: 🎲 zufällig einen auswählen, „👍 Gesehen & gut“ (wird zum Lieblingstitel → bessere Vorschläge), „👎 Gesehen, war nix“ oder entfernen
-- **Schon gesehen** ersetzt den Vorschlag und merkt ihn sich dauerhaft
+- **Schon gesehen** fragt kurz „👍 Gut / 👎 Blöd / 🤷 Ging so“, ersetzt den Vorschlag und merkt ihn sich dauerhaft
 - **Andere Vorschläge** zeigt 3 neue, ohne Wiederholungen
 - Beim nächsten Mal: **„Wie letztes Mal, nur neue Vorschläge“** auf dem Startbildschirm → ein Klick
+
+## Lernmodus 🧠
+
+Jede 👍/👎-Bewertung (bei „Schon gesehen“, in der Merkliste oder in Frage 4) fließt in die Vorschläge ein:
+- Titel, die einem 👎-Titel ähneln, rutschen deutlich nach unten (live: auch alles, was TMDB zu diesem Titel empfiehlt)
+- Aus allen Bewertungen entsteht ein Genre-Profil („Mögt ihr“ / „Eher nicht“) – das Hauptgenre eines Titels zählt voll, Nebengenres halb
+- 👍-Titel dienen als Vorlage für Ähnliches
+
+Auf der Seite **🧠 Euer Geschmack** seht ihr, was die App gelernt hat, könnt einzelne Bewertungen löschen, den Lernmodus ausschalten oder alles zurücksetzen.
 
 ## Starten
 

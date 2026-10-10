@@ -31,6 +31,7 @@
         <button class="btn primary big" id="startBtn" type="button">Los geht's</button>
         <button class="btn ghost" id="quickBtn" type="button" hidden>⚡ Wie letztes Mal, nur neue Vorschläge</button>
         <button class="btn ghost" id="watchStartBtn" type="button" hidden>❤️ Merkliste</button>
+        <button class="btn ghost" id="tasteStartBtn" type="button" hidden>🧠 Euer Geschmack</button>
         <p class="badge" id="liveBadge" hidden>🌐 Live-Modus: alle Filme &amp; Serien</p>
         <div class="tip" id="liveTip" hidden>
           <b>Tipp:</b> Im Live-Modus kennt die App <i>jeden</i> Film und jede Serie, zeigt Poster und prüft live, was gerade in euren Abos läuft.
@@ -67,8 +68,12 @@
 
     <!-- Frage 4: Favoriten -->
     <section class="screen" id="screen-favs" data-step="4">
-      <h2>Was fandet ihr richtig gut?</h2>
-      <p class="hint">Optional. Filme <i>oder</i> Serien, die euch gefallen haben – wir suchen Ähnliches, auch über Film/Serie hinweg. Wird gespeichert.</p>
+      <h2>Was fandet ihr gut – oder blöd?</h2>
+      <p class="hint">Optional. Bei 👍 sucht die App Ähnliches (auch über Film/Serie hinweg), bei 👎 lernt sie, was ihr nicht mögt. Wird gespeichert.</p>
+      <div class="segmented two" id="favMode" role="group" aria-label="Bewertung">
+        <button type="button" data-mode="like">👍 Fanden wir gut</button>
+        <button type="button" data-mode="dislike">👎 Fanden wir blöd</button>
+      </div>
       <div class="search">
         <input id="favInput" type="search" placeholder="z. B. Knives Out, Friends, Harry Potter …" autocomplete="off" aria-label="Titel suchen">
         <ul class="suggest" id="favSuggest" role="listbox"></ul>
@@ -89,6 +94,7 @@
         <button class="btn ghost" id="restartBtn" type="button">Fragen neu beantworten</button>
       </div>
       <p class="footnote">Verfügbarkeit gilt für Deutschland und kann sich ändern – „Wo läuft's?“ prüft den aktuellen Stand auf JustWatch.
+        <button class="linkbtn" id="tasteLink" type="button">🧠 Was die App über euch gelernt hat</button>
         <button class="linkbtn" id="resetSeenBtn" type="button" hidden>„Schon gesehen“-Liste leeren</button>
         <span id="tmdbNote" hidden><br>Daten: The Movie Database (TMDB) und JustWatch. Diese App nutzt die TMDB-API, ist aber nicht von TMDB geprüft oder zertifiziert.</span></p>
     </section>
@@ -101,6 +107,27 @@
       <button class="btn primary wide" id="watchRandom" type="button" hidden>🎲 Zufällig einen auswählen</button>
       <div class="results" id="watchItems"></div>
       <div class="nav col"><button class="btn ghost" id="watchFind" type="button">Neue Vorschläge suchen</button></div>
+    </section>
+
+    <!-- Geschmack / Lernmodus -->
+    <section class="screen" id="screen-taste">
+      <h2>🧠 Euer Geschmack</h2>
+      <p class="hint">Wenn ihr Titel mit 👍 oder 👎 bewertet („Schon gesehen“, Merkliste oder Frage 4), lernt die App daraus: Ähnliches zu 👎-Titeln und Genres, die ihr nicht mögt, rutschen nach unten.</p>
+      <label class="switch">
+        <input type="checkbox" id="learnToggle">
+        <span class="slider" aria-hidden="true"></span>
+        <span>Lernmodus</span>
+      </label>
+      <div id="tasteGenres"></div>
+      <h3 class="subq">👍 Fanden wir gut</h3>
+      <div class="chips" id="tasteLikes"></div>
+      <h3 class="subq">👎 Fanden wir blöd</h3>
+      <div class="chips" id="tasteDislikes"></div>
+      <p class="hint small">Tippt auf einen Titel, um die Bewertung zu löschen.</p>
+      <div class="nav col">
+        <button class="btn primary" id="tasteFind" type="button">Vorschläge suchen</button>
+        <button class="linkbtn" id="tasteReset" type="button">Alles Gelernte zurücksetzen</button>
+      </div>
     </section>
 
     <!-- Einstellungen -->

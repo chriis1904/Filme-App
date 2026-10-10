@@ -58,15 +58,18 @@ window.TMDB = (() => {
     return true;
   }
 
+  const genreKeys = (ids) => [...new Set((ids || []).map((id) => GENRE_KEY[id]).filter(Boolean))];
   const yearOf = (x) => Number((x.release_date || x.first_air_date || "").slice(0, 4)) || null;
   const titleOf = (x) => x.title || x.name || x.original_title || x.original_name || "";
+
+  const profileScore = (keys, prof) => keys.reduce((n, g) => n + (prof[g] || 0), 0);
 
   async function search(q) {
     const data = await get("/search/multi", { query: q, language: "de-DE", include_adult: "false" });
     return (data.results || [])
       .filter((x) => (x.media_type === "movie" || x.media_type === "tv") && (x.vote_count || 0) > 5)
       .slice(0, 7)
-      .map((x) => ({ tmdbId: x.id, mt: x.media_type, t: titleOf(x), y: yearOf(x) }));
+      .map((x) => ({ tmdbId: x.id, mt: x.media_type, t: titleOf(x), y: yearOf(x), g: genreKeys(x.genre_ids) }));
   }
 
   // ---------- Empfehlungen ----------
@@ -98,7 +101,11 @@ window.TMDB = (() => {
   }
 
   async function recommend(opts) {
-    // opts: services[], moods[], format, pop ('hits'|'mix'|'gems'), favs[], exclude Set
+    // opts: services[], moods[], format, pop ('hits'|'mix'|'gems'), favs[], exclude Set,
+    //       dislikes[] (Lernmodus: blöd gefundene Titel), profile {genreKey: -1..1}
+    const dislikes = opts.dislikes || [];
+    const profile = opts.profile || {};
+    for (const d of dislikes) opts.exclude.add(`${d.mt}:${d.tmdbId}`);
     const types = opts.format === "serie" ? ["tv"] : opts.format === "egal" ? ["movie", "tv"] : ["movie"];
     const cands = new Map();
     const add = (x, mt, src) => {
@@ -143,6 +150,16 @@ window.TMDB = (() => {
           })));
       }
     }
+    // Lernmodus: Was TMDB zu blöd gefundenen Titeln empfiehlt, ist vermutlich auch nichts für euch
+    const badRecs = new Map();
+    for (const d of dislikes.slice(-6)) {
+      jobs.push(get(`/${d.mt}/${d.tmdbId}/recommendations`, { language: "de-DE" })
+        .then((r) => (r.results || []).forEach((x) => {
+          const k = `${d.mt}:${x.id}`;
+          if (!badRecs.has(k)) badRecs.set(k, new Set());
+          badRecs.get(k).add(d.t);
+        })));
+    }
     const results = await Promise.allSettled(jobs);
     const failed = results.filter((r) => r.status === "rejected");
     if (failed.some((r) => r.reason && r.reason.message === "401")) throw new Error("401");
@@ -157,6 +174,10 @@ window.TMDB = (() => {
       const gem = isGem(c.x, c.mt);
       let s = moodHits * 2.5 + c.recFrom.size * 4 + c.simFrom.size * 3;
       s += ((c.x.vote_average || 0) - 6.8) * 1.6;
+      const taste = profileScore(genreKeys(gx), profile);
+      s += taste * 1.6;
+      if (badRecs.has(c.key)) s -= 4 * badRecs.get(c.key).size;
+      c.taste = taste;
       if (opts.pop === "gems") s += gem ? 3 : -3;
       if (opts.pop === "hits") s += gem ? -2.5 : 1.5;
       if ((c.x.vote_count || 0) < 20) s -= 5;
@@ -210,6 +231,7 @@ window.TMDB = (() => {
     const reasons = [];
     if (c.recFrom.size) reasons.push(`Ähnlich wie „${[...c.recFrom][0]}“`);
     else if (c.simFrom.size) reasons.push(`Ähnliche Themen wie „${[...c.simFrom][0]}“`);
+    else if (c.taste >= 1) reasons.push("Passt zu eurem Geschmack");
     return {
       item: {
         key: c.key, t: d.title || d.name, y: yearOf(d), type: c.mt === "movie" ? "film" : "serie",

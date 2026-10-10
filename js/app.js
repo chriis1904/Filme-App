@@ -86,14 +86,17 @@
     format: store.get("format", null),
     pop: store.get("pop", "mix"),
     favs: store.get("favs", []), // Offline: Titel-Strings
-    liveFavs: store.get("liveFavs", []), // Live: {tmdbId, mt, t, y}
+    liveFavs: store.get("liveFavs", []), // Live: {tmdbId, mt, t, y, g}
+    dislikes: store.get("dislikes", []), // Lernmodus offline: Titel, die blöd waren
+    liveDislikes: store.get("liveDislikes", []), // Lernmodus live: {tmdbId, mt, t, y, g}
+    learn: store.get("learn", true),
     seen: store.get("seen", []).filter((x) => typeof x === "string"), // Schlüssel "L:Titel" bzw. "movie:123"
     watchlist: store.get("watchlist", []), // Merkliste: {item, reasons, added}
     shown: [], // in dieser Runde schon gezeigte Schlüssel
     current: [], // aktuell angezeigte Vorschläge {item, reasons}
   };
   const save = () => {
-    for (const k of ["services", "moods", "format", "pop", "favs", "liveFavs", "seen", "watchlist"]) store.set(k, state[k]);
+    for (const k of ["services", "moods", "format", "pop", "favs", "liveFavs", "dislikes", "liveDislikes", "learn", "seen", "watchlist"]) store.set(k, state[k]);
   };
   const isLive = () => !!window.TMDB.getKey();
 
@@ -130,6 +133,7 @@
     if (id === "screen-favs") renderFavs();
     if (id === "screen-services") renderOptions();
     if (id === "screen-watchlist") renderWatchlist();
+    if (id === "screen-taste") renderTaste();
     updateNextButtons();
   }
   function next() { const i = STEPS.indexOf(currentScreen); if (i === STEPS.length - 1) find(); else show(STEPS[i + 1]); }
@@ -143,6 +147,9 @@
     const ready = activeServices().length && state.moods.length && state.format;
     $("#quickBtn").hidden = !ready;
     $("#watchStartBtn").hidden = state.watchlist.length === 0;
+    const nRated = ratedEntries().length;
+    $("#tasteStartBtn").hidden = nRated === 0;
+    $("#tasteStartBtn").textContent = `🧠 Euer Geschmack (${nRated} bewertet)`;
     $("#watchStartBtn").textContent = `❤️ Merkliste (${state.watchlist.length})`;
     $("#liveBadge").hidden = !isLive();
     $("#liveTip").hidden = isLive();
@@ -192,30 +199,85 @@
   }
   const toggle = (arr, v) => { const i = arr.indexOf(v); i >= 0 ? arr.splice(i, 1) : arr.push(v); };
 
+  // ---------- Bewertungen & Lernmodus ----------
+  // Schlüssel: offline der Titel, live "movie:123" / "tv:456"
+  const liveKey = (f) => `${f.mt}:${f.tmdbId}`;
+  const likedLocal = () => state.favs.filter((t) => byTitle.has(t));
+  const dislikedLocal = () => state.dislikes.filter((t) => byTitle.has(t));
+  let favMode = "like"; // Favoriten-Bildschirm: gerade "Gefallen" oder "Blöd" eintragen
+
+  function ratedEntries() {
+    const live = isLive();
+    const mk = (kind) => (x) => (typeof x === "string" ? { label: x, key: x, kind } : { label: x.t, key: liveKey(x), kind });
+    return [
+      ...(live ? state.liveFavs : likedLocal()).map(mk("like")),
+      ...(live ? state.liveDislikes : dislikedLocal()).map(mk("dislike")),
+    ];
+  }
+  function removeRating(key, kind) {
+    if (kind === "like") {
+      state.favs = state.favs.filter((t) => t !== key);
+      state.liveFavs = state.liveFavs.filter((f) => liveKey(f) !== key);
+    } else {
+      state.dislikes = state.dislikes.filter((t) => t !== key);
+      state.liveDislikes = state.liveDislikes.filter((f) => liveKey(f) !== key);
+    }
+    save();
+  }
+  // Einen Titel bewerten: v = 1 (gut), -1 (blöd), 0 (nur gesehen)
+  function rate(x, v) {
+    // x: {t, y, g, local:true} oder {tmdbId, mt, t, y, g}
+    const key = x.local ? x.t : liveKey(x);
+    removeRating(key, "like"); removeRating(key, "dislike");
+    if (v === 1) x.local ? state.favs.push(x.t) : state.liveFavs.push({ tmdbId: x.tmdbId, mt: x.mt, t: x.t, y: x.y, g: x.g || [] });
+    if (v === -1) x.local ? state.dislikes.push(x.t) : state.liveDislikes.push({ tmdbId: x.tmdbId, mt: x.mt, t: x.t, y: x.y, g: x.g || [] });
+    save();
+  }
+  // Vorschlag (item mit key "L:Titel" oder "movie:123") bewerten
+  function rateItem(item, v) {
+    if (!state.seen.includes(item.key)) state.seen.push(item.key);
+    if (item.key.startsWith("L:")) rate({ local: true, t: item.t }, v);
+    else { const [mt, id] = item.key.split(":"); rate({ tmdbId: Number(id), mt, t: item.t, y: item.y, g: item.g }, v); }
+  }
+
+  // Geschmacksprofil: Gewicht je Genre zwischen -1 (mögt ihr nicht) und +1 (mögt ihr)
+  function tasteProfile() {
+    if (!state.learn) return {};
+    const sum = {};
+    // Hauptgenre zählt voll, Nebengenres halb (ein 👎 für einen Horror-Thriller trifft v. a. Horror)
+    const add = (gs, v) => [...new Set(gs || [])].forEach((g, i) => { sum[g] = (sum[g] || 0) + v * (i === 0 ? 1 : 0.5); });
+    likedLocal().forEach((t) => add(byTitle.get(t).g, 1));
+    dislikedLocal().forEach((t) => add(byTitle.get(t).g, -1.2));
+    state.liveFavs.forEach((f) => add(f.g, 1));
+    state.liveDislikes.forEach((f) => add(f.g, -1.2));
+    const prof = {};
+    for (const [g, v] of Object.entries(sum)) prof[g] = Math.max(-1, Math.min(1, v / 3));
+    return prof;
+  }
+  const profileScore = (genres, prof) => [...new Set(genres)].reduce((n, g) => n + (prof[g] || 0), 0);
+
   // ---------- Favoriten-Suche (offline: eigene Liste, live: TMDB) ----------
-  function favList() {
-    return isLive() ? state.liveFavs.map((f) => ({ label: f.t, sub: f.y, key: `${f.mt}:${f.tmdbId}` }))
-      : state.favs.filter((t) => byTitle.has(t)).map((t) => ({ label: t, key: t }));
-  }
-  function removeFav(key) {
-    if (isLive()) state.liveFavs = state.liveFavs.filter((f) => `${f.mt}:${f.tmdbId}` !== key);
-    else state.favs = state.favs.filter((t) => t !== key);
-    save(); renderFavs();
-  }
   function renderFavs() {
     const box = $("#favChips"); box.innerHTML = "";
-    const list = favList();
+    const list = ratedEntries();
     list.forEach((f) => box.append(el("button", {
-      type: "button", class: "chip", "aria-label": `${f.label} entfernen`, onclick: () => removeFav(f.key),
-    }, f.label, el("span", { class: "x" }, "×"))));
+      type: "button", class: "chip" + (f.kind === "dislike" ? " bad" : ""), "aria-label": `${f.label} entfernen`,
+      onclick: () => { removeRating(f.key, f.kind); renderFavs(); },
+    }, f.kind === "dislike" ? "👎 " : "👍 ", f.label, el("span", { class: "x" }, "×"))));
     $("#favEmpty").hidden = list.length > 0;
-    $("#favInput").placeholder = isLive() ? "Jeder Film, jede Serie – z. B. Lioness, Trap …" : "z. B. Knives Out, Lioness, Friends …";
+    document.querySelectorAll("#favMode button").forEach((b) => {
+      b.classList.toggle("selected", b.dataset.mode === favMode);
+      b.setAttribute("aria-pressed", b.dataset.mode === favMode);
+    });
+    $("#favInput").placeholder = favMode === "dislike"
+      ? "Was war blöd? z. B. ein Film, bei dem ihr eingeschlafen seid …"
+      : isLive() ? "Jeder Film, jede Serie – z. B. Lioness, Trap …" : "z. B. Knives Out, Lioness, Friends …";
   }
   function searchLocal(q) {
     const nq = norm(q);
     if (nq.length < 2) return [];
     return TITLES
-      .filter((x) => !state.favs.includes(x.t))
+      .filter((x) => !state.favs.includes(x.t) && !state.dislikes.includes(x.t))
       .map((x) => { const n = norm(x.t); return { x, pos: n.indexOf(nq), starts: n.split(" ").some((w) => w.startsWith(nq)) }; })
       .filter((r) => r.pos >= 0)
       .sort((a, b) => (b.starts - a.starts) || a.pos - b.pos || a.x.t.length - b.x.t.length)
@@ -235,7 +297,8 @@
       try {
         const res = await window.TMDB.search(q);
         if (seq !== searchSeq) return;
-        suggestions = res.filter((r) => !state.liveFavs.some((f) => f.tmdbId === r.tmdbId && f.mt === r.mt));
+        const rated = new Set([...state.liveFavs, ...state.liveDislikes].map(liveKey));
+        suggestions = res.filter((r) => !rated.has(liveKey(r)));
       } catch (e) {
         if (seq !== searchSeq) return;
         suggestions = []; return drawSuggest(q, "Suche gerade nicht möglich – Internet/Schlüssel prüfen.");
@@ -256,9 +319,7 @@
     }
   }
   function addFav(x) {
-    if (isLive()) state.liveFavs.push({ tmdbId: x.tmdbId, mt: x.mt, t: x.t, y: x.y });
-    else if (!state.favs.includes(x.t)) state.favs.push(x.t);
-    save(); $("#favInput").value = ""; activeSuggest = -1; suggestions = []; drawSuggest(""); renderFavs(); $("#favInput").focus();
+    rate(isLive() ? x : { local: true, t: x.t }, favMode === "dislike" ? -1 : 1); $("#favInput").value = ""; activeSuggest = -1; suggestions = []; drawSuggest(""); renderFavs(); $("#favInput").focus();
   }
 
   // ---------- Offline-Empfehlungen ----------
@@ -270,7 +331,7 @@
     const g = overlap(c.g, fav.g) / Math.max(c.g.length, fav.g.length);
     return g * 3 + Math.min(overlap(c.k, fav.k), 3) * 1.5;
   }
-  function scoreLocal(c, favs) {
+  function scoreLocal(c, favs, bads, prof) {
     let s = 0;
     const reasons = [];
     const moodHits = c.m.filter((m) => state.moods.includes(m));
@@ -281,6 +342,12 @@
       s += sims[0].v * 1.3 + sims.slice(1).reduce((n, x) => n + x.v, 0) * 0.2;
       if (sims[0].v >= 3) reasons.push(`Ähnlich wie „${sims[0].f.t}“`);
     }
+    // Lernmodus: Ähnlichkeit zu blöd gefundenen Titeln und Genre-Geschmack
+    const badSims = bads.map((f) => ({ f, v: similarity(c, f) })).sort((a, b) => b.v - a.v);
+    if (badSims.length) s -= badSims[0].v * 1.6 + badSims.slice(1).reduce((n, x) => n + x.v, 0) * 0.3;
+    const taste = profileScore(c.g, prof);
+    s += taste * 1.6;
+    if (taste >= 1 && !reasons.length) reasons.push("Passt zu eurem Geschmack");
     const gem = GEMS.has(c.t);
     if (state.pop === "gems") s += gem ? 3 : -3;
     if (state.pop === "hits") s += gem ? -2.5 : 1;
@@ -291,13 +358,16 @@
     return { item: toItem(c), reasons, s, moodHits: moodHits.length, c };
   }
   function recommendLocal(exclude) {
-    const favs = state.favs.map((t) => byTitle.get(t)).filter(Boolean);
-    let pool = CANDIDATES.filter((c) => c.p.some((p) => state.services.includes(p)) && !exclude.has("L:" + c.t) && !state.favs.includes(c.t));
+    const favs = likedLocal().map((t) => byTitle.get(t));
+    const bads = state.learn ? dislikedLocal().map((t) => byTitle.get(t)) : [];
+    const prof = tasteProfile();
+    let pool = CANDIDATES.filter((c) => c.p.some((p) => state.services.includes(p)) && !exclude.has("L:" + c.t)
+      && !state.favs.includes(c.t) && !state.dislikes.includes(c.t));
     if (state.format === "film-kurz") pool = pool.filter((c) => c.type === "film" && c.rt <= 110);
     else if (state.format === "film") pool = pool.filter((c) => c.type === "film");
     else if (state.format === "serie") pool = pool.filter((c) => c.type === "serie");
 
-    let scored = pool.map((c) => scoreLocal(c, favs));
+    let scored = pool.map((c) => scoreLocal(c, favs, bads, prof));
     const matching = scored.filter((x) => x.moodHits > 0);
     const relaxed = matching.length < 3;
     if (!relaxed) scored = matching;
@@ -329,6 +399,7 @@
         const picks = await window.TMDB.recommend({
           services: activeServices(), moods: state.moods, format: state.format, pop: state.pop,
           favs: state.liveFavs, exclude,
+          dislikes: state.learn ? state.liveDislikes : [], profile: tasteProfile(),
         });
         return { picks, live: true };
       } catch (e) {
@@ -409,8 +480,8 @@
           el("a", { class: "btn small", href: `https://www.youtube.com/results?search_query=${q}+${c.y || ""}+trailer+deutsch`, target: "_blank", rel: "noopener" }, "▶ Trailer"),
           mode === "watch"
             ? [
-              el("button", { class: "btn small", type: "button", onclick: () => watchedFromList(c.key, true) }, "👍 Gesehen & gut"),
-              el("button", { class: "btn small ghost", type: "button", onclick: () => watchedFromList(c.key, false) }, "👎 Gesehen, war nix"),
+              el("button", { class: "btn small", type: "button", onclick: () => watchedFromList(c.key, 1) }, "👍 Gesehen & gut"),
+              el("button", { class: "btn small ghost", type: "button", onclick: () => watchedFromList(c.key, -1) }, "👎 Gesehen & blöd"),
               el("button", { class: "btn small ghost", type: "button", onclick: () => { removeFromWatchlist(c.key); renderWatchlist(); } }, "Entfernen"),
             ]
             : [
@@ -418,7 +489,7 @@
                 class: "btn small heart" + (inWatchlist(c.key) ? " on" : ""), type: "button", "aria-pressed": inWatchlist(c.key),
                 onclick: (e) => toggleWatch({ item: c, reasons }, e.currentTarget),
               }, inWatchlist(c.key) ? "❤️ Gemerkt" : "🤍 Merken"),
-              el("button", { class: "btn small ghost", type: "button", onclick: (e) => markSeen(c.key, e.currentTarget) }, "Schon gesehen"),
+              el("button", { class: "btn small ghost", type: "button", onclick: (e) => askRating(c, e.currentTarget.closest(".actions")) }, "Schon gesehen"),
             ])));
   }
 
@@ -443,23 +514,14 @@
     state.watchlist = state.watchlist.filter((w) => w.item.key !== key);
     save(); updateWatchBadge();
   }
-  // Aus der Merkliste gesehen: als gesehen markieren, bei 👍 als Lieblingstitel für künftige Vorschläge übernehmen
-  function watchedFromList(key, liked) {
+  // Aus der Merkliste gesehen: bewerten (Lernmodus) und von der Liste nehmen
+  function watchedFromList(key, v) {
     const w = state.watchlist.find((x) => x.item.key === key);
     if (!w) return;
-    if (!state.seen.includes(key)) state.seen.push(key);
-    if (liked) {
-      if (key.startsWith("L:")) {
-        if (!state.favs.includes(w.item.t)) state.favs.push(w.item.t);
-      } else {
-        const [mt, id] = key.split(":");
-        if (!state.liveFavs.some((f) => f.mt === mt && String(f.tmdbId) === id)) {
-          state.liveFavs.push({ tmdbId: Number(id), mt, t: w.item.t, y: w.item.y });
-        }
-      }
-    }
+    rateItem(w.item, v);
     removeFromWatchlist(key);
-    renderWatchlist(liked ? `„${w.item.t}“ ist jetzt bei euren Lieblingstiteln – die nächsten Vorschläge werden ähnlicher.` : "");
+    renderWatchlist(v === 1 ? `👍 „${w.item.t}“ gemerkt – ihr bekommt mehr in der Art.`
+      : `👎 „${w.item.t}“ gemerkt – sowas schlägt die App euch seltener vor.`);
   }
   function renderWatchlist(message = "") {
     const box = $("#watchItems"); box.innerHTML = "";
@@ -485,11 +547,25 @@
     c.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 
-  // Gesehenen Titel merken und nur diese eine Karte durch einen neuen Vorschlag ersetzen
-  async function markSeen(key, btn) {
-    if (!state.seen.includes(key)) state.seen.push(key);
-    save();
-    if (btn) { btn.disabled = true; btn.textContent = "Suche Ersatz …"; }
+  // "Schon gesehen" -> kurz fragen, wie er war (Lernmodus)
+  function askRating(item, actions) {
+    actions.innerHTML = "";
+    actions.append(
+      el("span", { class: "ask" }, "Wie fandet ihr ihn?"),
+      el("button", { class: "btn small", type: "button", onclick: () => markSeen(item, 1, actions) }, "👍 Gut"),
+      el("button", { class: "btn small", type: "button", onclick: () => markSeen(item, -1, actions) }, "👎 Blöd"),
+      el("button", { class: "btn small ghost", type: "button", onclick: () => markSeen(item, 0, actions) }, "🤷 Ging so"));
+  }
+
+  // Gesehenen Titel bewerten und nur diese eine Karte durch einen neuen Vorschlag ersetzen
+  async function markSeen(item, v, actions) {
+    const key = item.key;
+    rateItem(item, v);
+    if (actions) {
+      actions.innerHTML = "";
+      actions.append(el("span", { class: "ask" }, v === -1 ? "👎 Verstanden – sowas kommt seltener. Suche Ersatz …"
+        : v === 1 ? "👍 Notiert – mehr davon! Suche Ersatz …" : "Suche Ersatz …"));
+    }
     const exclude = new Set([...state.seen, ...state.shown, ...watchKeys(), ...state.current.map((p) => p.item.key)]);
     const { picks } = await getPicks(exclude);
     const others = state.current.filter((p) => p.item.key !== key);
@@ -502,6 +578,35 @@
     if (replacement) state.shown.push(replacement.item.key);
     drawCards();
     $("#resetSeenBtn").hidden = false;
+  }
+
+  // ---------- Geschmack-Seite ----------
+  function renderTaste() {
+    $("#learnToggle").checked = state.learn;
+    const prof = tasteProfile();
+    const entries = Object.entries(prof).filter(([, v]) => Math.abs(v) >= 0.3);
+    const likes = entries.filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
+    const dislikes = entries.filter(([, v]) => v < 0).sort((a, b) => a[1] - b[1]);
+    const box = $("#tasteGenres"); box.innerHTML = "";
+    const bar = ([g, v]) => el("div", { class: "tbar" },
+      el("span", { class: "tlabel" }, (GENRE_STYLE[g] || ["🎬"])[0] + " " + (GENRE_LABEL[g] || g)),
+      el("span", { class: "ttrack" }, el("span", { class: "tfill " + (v > 0 ? "pos" : "neg"), style: `width:${Math.round(Math.abs(v) * 100)}%` })));
+    if (!state.learn) box.append(el("p", { class: "hint small" }, "Lernmodus ist aus – Bewertungen werden gespeichert, aber nicht für Vorschläge genutzt."));
+    else if (!entries.length) box.append(el("p", { class: "hint small" }, "Noch zu wenig bewertet. Nach ein paar 👍/👎 seht ihr hier, welche Genres ihr mögt."));
+    else {
+      if (likes.length) box.append(el("h3", { class: "subq" }, "Mögt ihr"), ...likes.map(bar));
+      if (dislikes.length) box.append(el("h3", { class: "subq" }, "Eher nicht"), ...dislikes.map(bar));
+    }
+    const list = ratedEntries();
+    for (const [id, kind] of [["#tasteLikes", "like"], ["#tasteDislikes", "dislike"]]) {
+      const c = $(id); c.innerHTML = "";
+      const items = list.filter((f) => f.kind === kind);
+      if (!items.length) c.append(el("span", { class: "hint small" }, "Noch nichts."));
+      items.forEach((f) => c.append(el("button", {
+        type: "button", class: "chip" + (kind === "dislike" ? " bad" : ""), "aria-label": `${f.label} entfernen`,
+        onclick: () => { removeRating(f.key, f.kind); renderTaste(); },
+      }, f.label, el("span", { class: "x" }, "×"))));
+    }
   }
 
   // ---------- Einstellungen (Live-Modus) ----------
@@ -539,6 +644,18 @@
     $("#homeBtn").addEventListener("click", () => show("screen-start"));
     $("#settingsBtn").addEventListener("click", () => { renderSettings(); show("screen-settings"); });
     $("#watchBtn").addEventListener("click", () => show("screen-watchlist"));
+    $("#tasteStartBtn").addEventListener("click", () => show("screen-taste"));
+    $("#tasteLink").addEventListener("click", () => show("screen-taste"));
+    $("#tasteFind").addEventListener("click", () => (activeServices().length && state.moods.length && state.format ? find() : show("screen-services")));
+    $("#learnToggle").addEventListener("change", (e) => { state.learn = e.target.checked; save(); renderTaste(); });
+    $("#tasteReset").addEventListener("click", () => {
+      if (!confirm("Alle 👍/👎-Bewertungen löschen?")) return;
+      state.favs = []; state.liveFavs = []; state.dislikes = []; state.liveDislikes = [];
+      save(); renderTaste();
+    });
+    document.querySelectorAll("#favMode button").forEach((b) => b.addEventListener("click", () => {
+      favMode = b.dataset.mode; renderFavs(); $("#favInput").focus();
+    }));
     $("#watchStartBtn").addEventListener("click", () => show("screen-watchlist"));
     $("#watchRandom").addEventListener("click", randomFromWatchlist);
     $("#watchFind").addEventListener("click", () => show("screen-start"));
