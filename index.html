@@ -15,7 +15,10 @@
   <main class="app">
     <header class="top">
       <button class="brand" id="homeBtn" type="button" aria-label="Zum Start">🍿 <span>Movie Night</span></button>
-      <div class="progress" id="progress" aria-hidden="true"></div>
+      <div class="top-right">
+        <div class="progress" id="progress" aria-hidden="true"></div>
+        <button class="icon-btn" id="settingsBtn" type="button" aria-label="Einstellungen">⚙️</button>
+      </div>
     </header>
 
     <!-- Start -->
@@ -26,6 +29,11 @@
         <p class="lead">4 kurze Fragen, dann bekommt ihr 3 Vorschläge – nur aus euren Abos. Schluss mit Endlos-Scrollen.</p>
         <button class="btn primary big" id="startBtn" type="button">Los geht's</button>
         <button class="btn ghost" id="quickBtn" type="button" hidden>⚡ Wie letztes Mal, nur neue Vorschläge</button>
+        <p class="badge" id="liveBadge" hidden>🌐 Live-Modus: alle Filme &amp; Serien</p>
+        <div class="tip" id="liveTip" hidden>
+          <b>Tipp:</b> Im Live-Modus kennt die App <i>jeden</i> Film und jede Serie, zeigt Poster und prüft live, was gerade in euren Abos läuft.
+          <button class="linkbtn" id="liveTipBtn" type="button">Live-Modus einrichten (2 Min.)</button>
+        </div>
       </div>
     </section>
 
@@ -50,13 +58,15 @@
       <h2>Film oder Serie?</h2>
       <p class="hint">Wie viel Zeit habt ihr heute Abend?</p>
       <div class="options" id="opt-format"></div>
+      <h3 class="subq">Bekannt oder Geheimtipp?</h3>
+      <div class="segmented" id="opt-pop" role="group" aria-label="Bekanntheit"></div>
       <div class="nav"><button class="btn ghost" data-back type="button">Zurück</button><button class="btn primary" data-next type="button">Weiter</button></div>
     </section>
 
     <!-- Frage 4: Favoriten -->
     <section class="screen" id="screen-favs" data-step="4">
       <h2>Was fandet ihr richtig gut?</h2>
-      <p class="hint">Optional. Ein paar Filme oder Serien, die euch gefallen haben – wir suchen Ähnliches. Wird ebenfalls gespeichert.</p>
+      <p class="hint">Optional. Filme <i>oder</i> Serien, die euch gefallen haben – wir suchen Ähnliches, auch über Film/Serie hinweg. Wird gespeichert.</p>
       <div class="search">
         <input id="favInput" type="search" placeholder="z. B. Knives Out, Friends, Harry Potter …" autocomplete="off" aria-label="Titel suchen">
         <ul class="suggest" id="favSuggest" role="listbox"></ul>
@@ -70,17 +80,39 @@
     <section class="screen" id="screen-results">
       <h2 id="resultTitle">Eure Vorschläge</h2>
       <p class="hint" id="resultHint"></p>
+      <p class="warn" id="resultWarn" hidden></p>
       <div class="results" id="results"></div>
       <div class="nav col">
         <button class="btn primary" id="rerollBtn" type="button">🔄 Andere Vorschläge</button>
         <button class="btn ghost" id="restartBtn" type="button">Fragen neu beantworten</button>
       </div>
       <p class="footnote">Verfügbarkeit gilt für Deutschland und kann sich ändern – „Wo läuft's?“ prüft den aktuellen Stand auf JustWatch.
-        <button class="linkbtn" id="resetSeenBtn" type="button" hidden>„Schon gesehen“-Liste leeren</button></p>
+        <button class="linkbtn" id="resetSeenBtn" type="button" hidden>„Schon gesehen“-Liste leeren</button>
+        <span id="tmdbNote" hidden><br>Daten: The Movie Database (TMDB) und JustWatch. Diese App nutzt die TMDB-API, ist aber nicht von TMDB geprüft oder zertifiziert.</span></p>
+    </section>
+
+    <!-- Einstellungen -->
+    <section class="screen" id="screen-settings">
+      <h2>⚙️ Live-Modus</h2>
+      <p class="hint">Mit einem kostenlosen Schlüssel der Filmdatenbank <b>TMDB</b> kennt die App jeden Film und jede Serie (auch Geheimtipps wie „Trap: No Way Out“ oder „Lioness“), zeigt Poster und prüft live, was gerade auf euren Diensten läuft.</p>
+      <ol class="steps">
+        <li>Kostenlos registrieren auf <a href="https://www.themoviedb.org/signup" target="_blank" rel="noopener">themoviedb.org</a>.</li>
+        <li>Unter <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener">Einstellungen → API</a> einen Schlüssel beantragen („Developer“, Zweck: private Nutzung).</li>
+        <li>Den <b>API-Schlüssel</b> (oder das „Lesezugriffstoken“) kopieren und hier einfügen.</li>
+      </ol>
+      <input id="keyInput" class="text" type="text" placeholder="TMDB-API-Schlüssel einfügen" autocomplete="off" spellcheck="false" aria-label="TMDB-API-Schlüssel">
+      <p class="hint small" id="keyStatus"></p>
+      <p class="hint small">Der Schlüssel wird nur auf diesem Gerät gespeichert.</p>
+      <div class="nav">
+        <button class="btn ghost" id="keyRemove" type="button" hidden>Entfernen</button>
+        <button class="btn" id="keySave" type="button">Prüfen &amp; speichern</button>
+        <button class="btn primary" id="settingsDone" type="button">Fertig</button>
+      </div>
     </section>
   </main>
 
   <script src="js/data.js"></script>
+  <script src="js/tmdb.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

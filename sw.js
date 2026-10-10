@@ -1,6 +1,6 @@
 // Einfacher Offline-Cache: erst Netzwerk (damit Updates sofort ankommen), sonst Cache.
-const CACHE = "movie-night-v1";
-const FILES = ["./", "index.html", "styles.css", "js/data.js", "js/app.js", "icon.svg", "manifest.webmanifest"];
+const CACHE = "movie-night-v2";
+const FILES = ["./", "index.html", "styles.css", "js/data.js", "js/tmdb.js", "js/app.js", "icon.svg", "manifest.webmanifest"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)));

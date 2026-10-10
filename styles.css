@@ -54,7 +54,8 @@ h2 { font-size: 1.6rem; margin: .2em 0 .25em; }
 .btn.small { padding: 8px 14px; font-size: .88rem; }
 
 .nav { display: flex; justify-content: space-between; gap: 12px; margin-top: 28px; }
-.nav .btn.primary { margin-left: auto; min-width: 140px; }
+.nav .btn.primary { margin-left: auto; min-width: 120px; }
+.nav { flex-wrap: wrap; }
 .nav.col { flex-direction: column; }
 .nav.col .btn { width: 100%; margin: 0; }
 
@@ -122,4 +123,38 @@ h2 { font-size: 1.6rem; margin: .2em 0 .25em; }
   .card { grid-template-columns: 1fr; }
   .poster { min-height: 84px; }
   .opt.mood { min-height: 92px; font-size: .92rem; }
+}
+
+.top-right { display: flex; align-items: center; gap: 12px; }
+.icon-btn { background: none; border: 0; font-size: 1.3rem; cursor: pointer; padding: 6px; border-radius: 50%; }
+.icon-btn:hover { background: var(--bg2); }
+
+.badge { margin: 8px 0 0; color: var(--accent2); font-size: .92rem; }
+.tip { margin-top: 28px; padding: 14px 16px; border: 1px dashed var(--line); border-radius: 14px; color: var(--muted); font-size: .92rem; line-height: 1.5; max-width: 30em; }
+.tip .linkbtn { color: var(--accent2); display: block; margin: 6px auto 0; font-weight: 600; }
+
+.subq { margin: 26px 0 10px; font-size: 1.05rem; }
+.segmented { display: grid; grid-template-columns: repeat(3, 1fr); background: var(--card); border: 2px solid var(--line); border-radius: 999px; padding: 4px; gap: 4px; }
+.segmented button { appearance: none; border: 0; background: none; color: var(--muted); font-weight: 600; font-size: .92rem; padding: 10px 6px; border-radius: 999px; cursor: pointer; }
+.segmented button.selected { background: linear-gradient(135deg, var(--accent), #ff7a59); color: #fff; }
+
+.warn { background: #3d2a12; border: 1px solid #7a5520; color: #ffd59a; border-radius: 12px; padding: 10px 14px; font-size: .9rem; margin: -8px 0 16px; }
+
+.card.has-img { grid-template-columns: 120px 1fr; }
+.poster img { width: 100%; height: 100%; object-fit: cover; display: block; position: absolute; inset: 0; }
+.gem { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); background: rgba(20, 16, 33, .85); color: #9ff0ff; font-size: .72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
+
+.loading { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 40px 0; color: var(--muted); }
+.spinner { width: 36px; height: 36px; border-radius: 50%; border: 4px solid var(--line); border-top-color: var(--accent); animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.steps { color: var(--muted); line-height: 1.6; padding-left: 20px; margin: 0 0 18px; }
+.steps a, .hint a { color: var(--accent2); }
+input.text { width: 100%; padding: 15px 18px; font-size: 1rem; border-radius: var(--radius); border: 2px solid var(--line); background: var(--card); color: var(--text); outline: none; font-family: ui-monospace, monospace; }
+input.text:focus { border-color: var(--accent); }
+
+@media (max-width: 420px) {
+  .card.has-img { grid-template-columns: 1fr; }
+  .card.has-img .poster { min-height: 220px; }
+  .card.has-img .poster img { object-position: center 20%; }
 }
