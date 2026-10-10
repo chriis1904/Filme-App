@@ -1,5 +1,5 @@
 // Einfacher Offline-Cache: erst Netzwerk (damit Updates sofort ankommen), sonst Cache.
-const CACHE = "movie-night-v2";
+const CACHE = "movie-night-v3";
 const FILES = ["./", "index.html", "styles.css", "js/data.js", "js/tmdb.js", "js/app.js", "icon.svg", "manifest.webmanifest"];
 
 self.addEventListener("install", (e) => {

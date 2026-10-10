@@ -88,11 +88,12 @@
     favs: store.get("favs", []), // Offline: Titel-Strings
     liveFavs: store.get("liveFavs", []), // Live: {tmdbId, mt, t, y}
     seen: store.get("seen", []).filter((x) => typeof x === "string"), // Schlüssel "L:Titel" bzw. "movie:123"
+    watchlist: store.get("watchlist", []), // Merkliste: {item, reasons, added}
     shown: [], // in dieser Runde schon gezeigte Schlüssel
     current: [], // aktuell angezeigte Vorschläge {item, reasons}
   };
   const save = () => {
-    for (const k of ["services", "moods", "format", "pop", "favs", "liveFavs", "seen"]) store.set(k, state[k]);
+    for (const k of ["services", "moods", "format", "pop", "favs", "liveFavs", "seen", "watchlist"]) store.set(k, state[k]);
   };
   const isLive = () => !!window.TMDB.getKey();
 
@@ -128,6 +129,7 @@
     if (id === "screen-start") renderStart();
     if (id === "screen-favs") renderFavs();
     if (id === "screen-services") renderOptions();
+    if (id === "screen-watchlist") renderWatchlist();
     updateNextButtons();
   }
   function next() { const i = STEPS.indexOf(currentScreen); if (i === STEPS.length - 1) find(); else show(STEPS[i + 1]); }
@@ -140,6 +142,8 @@
   function renderStart() {
     const ready = activeServices().length && state.moods.length && state.format;
     $("#quickBtn").hidden = !ready;
+    $("#watchStartBtn").hidden = state.watchlist.length === 0;
+    $("#watchStartBtn").textContent = `❤️ Merkliste (${state.watchlist.length})`;
     $("#liveBadge").hidden = !isLive();
     $("#liveTip").hidden = isLive();
   }
@@ -343,7 +347,7 @@
     box.innerHTML = "";
     box.append(el("div", { class: "loading" }, el("div", { class: "spinner" }), "Suche die perfekten Filme …"));
     $("#rerollBtn").disabled = true;
-    const exclude = new Set([...state.seen, ...state.shown]);
+    const exclude = new Set([...state.seen, ...state.shown, ...watchKeys()]);
     let res;
     try { res = await getPicks(exclude); } finally { busy = false; $("#rerollBtn").disabled = false; }
     const { picks, relaxed, warning } = res;
@@ -374,7 +378,7 @@
     state.current.forEach((p, i) => box.append(card(p, i)));
   }
 
-  function card({ item: c, reasons }, i) {
+  function card({ item: c, reasons }, i, mode = "result") {
     const [emoji, c1, c2] = GENRE_STYLE[c.g[0]] || ["🎬", "#444", "#222"];
     const q = encodeURIComponent(c.t);
     const runtime = c.type === "serie"
@@ -403,7 +407,82 @@
         el("div", { class: "actions" },
           el("a", { class: "btn small", href: c.jwLink || `https://www.justwatch.com/de/Suche?q=${q}`, target: "_blank", rel: "noopener" }, "Wo läuft's?"),
           el("a", { class: "btn small", href: `https://www.youtube.com/results?search_query=${q}+${c.y || ""}+trailer+deutsch`, target: "_blank", rel: "noopener" }, "▶ Trailer"),
-          el("button", { class: "btn small ghost", type: "button", onclick: (e) => markSeen(c.key, e.currentTarget) }, "Schon gesehen"))));
+          mode === "watch"
+            ? [
+              el("button", { class: "btn small", type: "button", onclick: () => watchedFromList(c.key, true) }, "👍 Gesehen & gut"),
+              el("button", { class: "btn small ghost", type: "button", onclick: () => watchedFromList(c.key, false) }, "👎 Gesehen, war nix"),
+              el("button", { class: "btn small ghost", type: "button", onclick: () => { removeFromWatchlist(c.key); renderWatchlist(); } }, "Entfernen"),
+            ]
+            : [
+              el("button", {
+                class: "btn small heart" + (inWatchlist(c.key) ? " on" : ""), type: "button", "aria-pressed": inWatchlist(c.key),
+                onclick: (e) => toggleWatch({ item: c, reasons }, e.currentTarget),
+              }, inWatchlist(c.key) ? "❤️ Gemerkt" : "🤍 Merken"),
+              el("button", { class: "btn small ghost", type: "button", onclick: (e) => markSeen(c.key, e.currentTarget) }, "Schon gesehen"),
+            ])));
+  }
+
+  // ---------- Merkliste ----------
+  const watchKeys = () => state.watchlist.map((w) => w.item.key);
+  const inWatchlist = (key) => state.watchlist.some((w) => w.item.key === key);
+  function updateWatchBadge() {
+    const n = state.watchlist.length;
+    $("#watchCount").textContent = n;
+    $("#watchCount").hidden = n === 0;
+  }
+  function toggleWatch(entry, btn) {
+    const on = !inWatchlist(entry.item.key);
+    if (on) state.watchlist.unshift({ item: entry.item, reasons: entry.reasons, added: Date.now() });
+    else removeFromWatchlist(entry.item.key);
+    save(); updateWatchBadge();
+    btn.classList.toggle("on", on);
+    btn.setAttribute("aria-pressed", on);
+    btn.textContent = on ? "❤️ Gemerkt" : "🤍 Merken";
+  }
+  function removeFromWatchlist(key) {
+    state.watchlist = state.watchlist.filter((w) => w.item.key !== key);
+    save(); updateWatchBadge();
+  }
+  // Aus der Merkliste gesehen: als gesehen markieren, bei 👍 als Lieblingstitel für künftige Vorschläge übernehmen
+  function watchedFromList(key, liked) {
+    const w = state.watchlist.find((x) => x.item.key === key);
+    if (!w) return;
+    if (!state.seen.includes(key)) state.seen.push(key);
+    if (liked) {
+      if (key.startsWith("L:")) {
+        if (!state.favs.includes(w.item.t)) state.favs.push(w.item.t);
+      } else {
+        const [mt, id] = key.split(":");
+        if (!state.liveFavs.some((f) => f.mt === mt && String(f.tmdbId) === id)) {
+          state.liveFavs.push({ tmdbId: Number(id), mt, t: w.item.t, y: w.item.y });
+        }
+      }
+    }
+    removeFromWatchlist(key);
+    renderWatchlist(liked ? `„${w.item.t}“ ist jetzt bei euren Lieblingstiteln – die nächsten Vorschläge werden ähnlicher.` : "");
+  }
+  function renderWatchlist(message = "") {
+    const box = $("#watchItems"); box.innerHTML = "";
+    const n = state.watchlist.length;
+    $("#watchHint").textContent = n ? `${n} ${n === 1 ? "Titel" : "Titel"} für die nächsten Filmabende.` : "";
+    $("#watchMsg").textContent = message;
+    $("#watchMsg").hidden = !message;
+    $("#watchRandom").hidden = n < 2;
+    if (!n) {
+      box.append(el("div", { class: "empty" },
+        el("div", { class: "hero-emoji" }, "🤍"),
+        el("p", {}, "Noch leer. Tippt bei einem Vorschlag auf „🤍 Merken“, dann landet er hier.")));
+      return;
+    }
+    state.watchlist.forEach((w, i) => box.append(card(w, i, "watch")));
+  }
+  function randomFromWatchlist() {
+    const cards = [...document.querySelectorAll("#watchItems .card")];
+    if (!cards.length) return;
+    cards.forEach((c) => c.classList.remove("picked"));
+    const c = cards[Math.floor(Math.random() * cards.length)];
+    c.classList.add("picked");
+    c.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 
   // Gesehenen Titel merken und nur diese eine Karte durch einen neuen Vorschlag ersetzen
@@ -411,7 +490,7 @@
     if (!state.seen.includes(key)) state.seen.push(key);
     save();
     if (btn) { btn.disabled = true; btn.textContent = "Suche Ersatz …"; }
-    const exclude = new Set([...state.seen, ...state.shown, ...state.current.map((p) => p.item.key)]);
+    const exclude = new Set([...state.seen, ...state.shown, ...watchKeys(), ...state.current.map((p) => p.item.key)]);
     const { picks } = await getPicks(exclude);
     const others = state.current.filter((p) => p.item.key !== key);
     // Ersatz so wählen, dass Film/Serie-Mix und Geheimtipp-Regel möglichst erhalten bleiben
@@ -459,6 +538,11 @@
     $("#startBtn").addEventListener("click", () => show("screen-services"));
     $("#homeBtn").addEventListener("click", () => show("screen-start"));
     $("#settingsBtn").addEventListener("click", () => { renderSettings(); show("screen-settings"); });
+    $("#watchBtn").addEventListener("click", () => show("screen-watchlist"));
+    $("#watchStartBtn").addEventListener("click", () => show("screen-watchlist"));
+    $("#watchRandom").addEventListener("click", randomFromWatchlist);
+    $("#watchFind").addEventListener("click", () => show("screen-start"));
+    updateWatchBadge();
     $("#liveTipBtn").addEventListener("click", () => { renderSettings(); show("screen-settings"); });
     $("#keySave").addEventListener("click", saveKey);
     $("#keyRemove").addEventListener("click", () => { window.TMDB.setKey(""); renderSettings(); });

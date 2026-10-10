@@ -158,3 +158,10 @@ input.text:focus { border-color: var(--accent); }
   .card.has-img .poster { min-height: 220px; }
   .card.has-img .poster img { object-position: center 20%; }
 }
+
+.icon-btn { position: relative; }
+.icon-btn .count { position: absolute; top: -2px; right: -4px; background: var(--accent); color: #fff; font-size: .68rem; font-weight: 700; min-width: 18px; height: 18px; line-height: 18px; border-radius: 9px; padding: 0 4px; text-align: center; }
+.btn.heart.on { border-color: var(--accent); background: #34203f; }
+.btn.wide { width: 100%; margin-bottom: 16px; }
+.okmsg { background: #183a2a; border: 1px solid #2f7a52; color: #b7f5d0; border-radius: 12px; padding: 10px 14px; font-size: .9rem; margin: 0 0 16px; }
+.card.picked { border-color: var(--accent2); box-shadow: 0 0 0 3px var(--accent2), 0 12px 40px rgba(255, 179, 71, .25); }

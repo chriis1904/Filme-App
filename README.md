@@ -12,6 +12,7 @@ Schluss mit Endlos-Scrollen: 4 kurze Fragen, dann schlägt die App **3 Filme ode
 Danach:
 - **Wo läuft's?** öffnet JustWatch mit dem aktuellen Streaming-Stand
 - **▶ Trailer** sucht den deutschen Trailer auf YouTube
+- **🤍 Merken** legt den Vorschlag auf eure **Merkliste** (❤️ oben rechts). Dort: 🎲 zufällig einen auswählen, „👍 Gesehen & gut“ (wird zum Lieblingstitel → bessere Vorschläge), „👎 Gesehen, war nix“ oder entfernen
 - **Schon gesehen** ersetzt den Vorschlag und merkt ihn sich dauerhaft
 - **Andere Vorschläge** zeigt 3 neue, ohne Wiederholungen
 - Beim nächsten Mal: **„Wie letztes Mal, nur neue Vorschläge“** auf dem Startbildschirm → ein Klick

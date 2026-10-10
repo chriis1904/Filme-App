@@ -17,6 +17,7 @@
       <button class="brand" id="homeBtn" type="button" aria-label="Zum Start">🍿 <span>Movie Night</span></button>
       <div class="top-right">
         <div class="progress" id="progress" aria-hidden="true"></div>
+        <button class="icon-btn" id="watchBtn" type="button" aria-label="Merkliste">❤️<span class="count" id="watchCount" hidden>0</span></button>
         <button class="icon-btn" id="settingsBtn" type="button" aria-label="Einstellungen">⚙️</button>
       </div>
     </header>
@@ -29,6 +30,7 @@
         <p class="lead">4 kurze Fragen, dann bekommt ihr 3 Vorschläge – nur aus euren Abos. Schluss mit Endlos-Scrollen.</p>
         <button class="btn primary big" id="startBtn" type="button">Los geht's</button>
         <button class="btn ghost" id="quickBtn" type="button" hidden>⚡ Wie letztes Mal, nur neue Vorschläge</button>
+        <button class="btn ghost" id="watchStartBtn" type="button" hidden>❤️ Merkliste</button>
         <p class="badge" id="liveBadge" hidden>🌐 Live-Modus: alle Filme &amp; Serien</p>
         <div class="tip" id="liveTip" hidden>
           <b>Tipp:</b> Im Live-Modus kennt die App <i>jeden</i> Film und jede Serie, zeigt Poster und prüft live, was gerade in euren Abos läuft.
@@ -89,6 +91,16 @@
       <p class="footnote">Verfügbarkeit gilt für Deutschland und kann sich ändern – „Wo läuft's?“ prüft den aktuellen Stand auf JustWatch.
         <button class="linkbtn" id="resetSeenBtn" type="button" hidden>„Schon gesehen“-Liste leeren</button>
         <span id="tmdbNote" hidden><br>Daten: The Movie Database (TMDB) und JustWatch. Diese App nutzt die TMDB-API, ist aber nicht von TMDB geprüft oder zertifiziert.</span></p>
+    </section>
+
+    <!-- Merkliste -->
+    <section class="screen" id="screen-watchlist">
+      <h2>❤️ Eure Merkliste</h2>
+      <p class="hint" id="watchHint"></p>
+      <p class="okmsg" id="watchMsg" hidden></p>
+      <button class="btn primary wide" id="watchRandom" type="button" hidden>🎲 Zufällig einen auswählen</button>
+      <div class="results" id="watchItems"></div>
+      <div class="nav col"><button class="btn ghost" id="watchFind" type="button">Neue Vorschläge suchen</button></div>
     </section>
 
     <!-- Einstellungen -->
